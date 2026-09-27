@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Package Photo Catalog</title>
+
+  <!-- PWA & Mobile Settings -->
+  <meta name="theme-color" content="#2563eb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Packages">
+  
+  <!-- App Icon (SVG Data URI) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563eb'/><path d='M30 35h40v40H30z' fill='none' stroke='white' stroke-width='6'/><path d='M25 35l25-15 25 15' fill='none' stroke='white' stroke-width='6'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232563eb'/><path d='M30 35h40v40H30z' fill='none' stroke='white' stroke-width='6'/><path d='M25 35l25-15 25 15' fill='none' stroke='white' stroke-width='6'/></svg>">
+
+  <!-- Web App Manifest (Data URI) -->
+  <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Package%20Photo%20Catalog%22%2C%22short_name%22%3A%22Packages%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f4f6f8%22%2C%22theme_color%22%3A%22%232563eb%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'20'%20fill%3D'%232563eb'%2F%3E%3Cpath%20d%3D'M30%2035h40v40H30z'%20fill%3D'none'%20stroke%3D'white'%20stroke-width%3D'6'%2F%3E%3Cpath%20d%3D'M25%2035l25-15%2025%2015'%20fill%3D'none'%20stroke%3D'white'%20stroke-width%3D'6'%2F%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%20512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+
+  <!-- QR Code Reader Library -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f4f6f8; color: #333; margin: 0; padding: 16px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 { margin-top: 0; text-align: center; font-size: 1.5rem; }
+    
+    .card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    h2 { font-size: 1.1rem; margin-top: 0; }
+
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    label { font-weight: 600; font-size: 0.85rem; }
+    input[type="text"], textarea, input[type="file"] { padding: 10px; border: 1px solid #ccc; border-radius: 6px; width: 100%; font-size: 0.95rem; }
+    textarea { resize: vertical; height: 70px; }
+    
+    button { background: #2563eb; color: white; border: none; padding: 12px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem; width: 100%; }
+    button:active { background: #1d4ed8; }
+    
+    .search-bar { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 16px; }
+    
+    .package-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .package-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+    
+    .image-container { display: grid; grid-template-columns: 1fr 1fr; background: #eee; height: 160px; }
+    .image-box { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    .image-box img { width: 100%; height: 100%; object-fit: cover; }
+    .image-label { position: absolute; bottom: 4px; left: 4px; background: rgba(0,0,0,0.6); color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7rem; }
+    
+    .package-details { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .qr-data { background: #e0f2fe; color: #0369a1; padding: 6px 8px; border-radius: 4px; font-family: monospace; font-size: 0.85rem; margin-bottom: 8px; word-break: break-all; }
+    .description { margin-bottom: 12px; font-size: 0.9rem; white-space: pre-wrap; }
+    
+    .delete-btn { background: #ef4444; padding: 8px 12px; font-size: 0.85rem; width: auto; align-self: flex-end; }
+    .delete-btn:active { background: #dc2626; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Package Catalog</h1>
+
+  <div class="card">
+    <h2>Add New Package</h2>
+    <form id="packageForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="insidePhoto">Inside Photo (Contents)</label>
+          <input type="file" id="insidePhoto" accept="image/*" capture="environment" required>
+        </div>
+        <div class="form-group">
+          <label for="qrPhoto">Outside Photo (QR Code)</label>
+          <input type="file" id="qrPhoto" accept="image/*" capture="environment" required>
+        </div>
+      </div>
+      
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label for="qrText">QR Code Value</label>
+        <input type="text" id="qrText" placeholder="Auto-filled if QR is detected">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label for="description">Contents Description</label>
+        <textarea id="description" placeholder="List items inside..." required></textarea>
+      </div>
+
+      <button type="submit">Save Package</button>
+    </form>
+  </div>
+
+  <input type="text" id="searchInput" class="search-bar" placeholder="Search by QR code or description...">
+
+  <div class="package-grid" id="packageList"></div>
+</div>
+
+<script>
+  // Service Worker Registration for Offline Capabilities & PWA Support
+  if ('serviceWorker' in navigator) {
+    const swScript = `
+      const CACHE_NAME = 'pkg-catalog-v1';
+      const ASSETS = [
+        './',
+        'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js'
+      ];
+      self.addEventListener('install', (e) => {
+        e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+      });
+      self.addEventListener('fetch', (e) => {
+        e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
+      });
+    `;
+    const blob = new Blob([swScript], { type: 'application/javascript' });
+    const blobUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(blobUrl).catch(() => {});
+  }
+
+  let db;
+
+  // Initialize IndexedDB
+  const request = indexedDB.open("PackageCatalogDB", 1);
+  request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    if (!db.objectStoreNames.contains("packages")) {
+      db.createObjectStore("packages", { keyPath: "id", autoIncrement: true });
+    }
+  };
+  request.onsuccess = (e) => {
+    db = e.target.result;
+    renderPackages();
+  };
+
+  // Decode QR code automatically when photo is selected
+  document.getElementById('qrPhoto').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (code) {
+          document.getElementById('qrText').value = code.data;
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Handle Form Submission
+  document.getElementById('packageForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const insideFile = document.getElementById('insidePhoto').files[0];
+    const qrFile = document.getElementById('qrPhoto').files[0];
+    const qrText = document.getElementById('qrText').value.trim();
+    const description = document.getElementById('description').value.trim();
+
+    const insideBase64 = await fileToBase64(insideFile);
+    const qrBase64 = await fileToBase64(qrFile);
+
+    const packageItem = {
+      insideImage: insideBase64,
+      qrImage: qrBase64,
+      qrText: qrText || "N/A",
+      description: description,
+      timestamp: new Date().toLocaleDateString()
+    };
+
+    const tx = db.transaction("packages", "readwrite");
+    const store = tx.objectStore("packages");
+    store.add(packageItem);
+
+    tx.oncomplete = () => {
+      document.getElementById('packageForm').reset();
+      renderPackages();
+    };
+  });
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = error => reject(error);
+    });
+  }
+
+  function renderPackages(filter = '') {
+    const list = document.getElementById('packageList');
+    list.innerHTML = '';
+
+    const tx = db.transaction("packages", "readonly");
+    const store = tx.objectStore("packages");
+    const req = store.getAll();
+
+    req.onsuccess = () => {
+      const packages = req.result;
+      const filtered = packages.filter(item => 
+        item.description.toLowerCase().includes(filter.toLowerCase()) ||
+        item.qrText.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      filtered.reverse().forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'package-card';
+        card.innerHTML = `
+          <div class="image-container">
+            <div class="image-box">
+              <img src="${item.insideImage}" alt="Inside Photo">
+              <span class="image-label">Inside</span>
+            </div>
+            <div class="image-box">
+              <img src="${item.qrImage}" alt="QR Photo">
+              <span class="image-label">Outside</span>
+            </div>
+          </div>
+          <div class="package-details">
+            <div>
+              <div class="qr-data">QR: ${escapeHtml(item.qrText)}</div>
+              <div class="description">${escapeHtml(item.description)}</div>
+            </div>
+            <button class="delete-btn" onclick="deletePackage(${item.id})">Delete</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    };
+  }
+
+  function deletePackage(id) {
+    const tx = db.transaction("packages", "readwrite");
+    const store = tx.objectStore("packages");
+    store.delete(id);
+    tx.oncomplete = () => renderPackages(document.getElementById('searchInput').value);
+  }
+
+  document.getElementById('searchInput').addEventListener('input', function(e) {
+    renderPackages(e.target.value);
+  });
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+</script>
+
+</body>
+</html>
